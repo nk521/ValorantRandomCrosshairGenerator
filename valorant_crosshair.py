@@ -297,7 +297,7 @@ def randomize():
     return "0;" + str(g) + str(p) + str(a) + str(s)[:-1]
 
 
-if len(sys.argv) > 1:
+if len(sys.argv) < 2:
 
     def helper_randomize():
         r = randomize()
