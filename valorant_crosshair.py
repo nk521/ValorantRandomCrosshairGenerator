@@ -1,17 +1,9 @@
-from dataclasses import dataclass
-import pyperclip
-
 import random
+import sys
+from dataclasses import dataclass
 
-
-def is_in_range(n: int | float, min_range: int | float, max_range: int | float) -> int | float:
-    if n <= min_range:
-        return min_range
-
-    if n >= max_range:
-        return max_range
-
-    return n
+import keyboard
+import pyperclip
 
 
 def r_int(mn: int, mx: int):
@@ -19,7 +11,7 @@ def r_int(mn: int, mx: int):
 
 
 def r_float(mn: int, mx: int, fdiv: int = 100):
-    return r_int(int(mn * fdiv), int(mx * fdiv))/fdiv
+    return r_int(int(mn * fdiv), int(mx * fdiv)) / fdiv
 
 
 def r_bool():
@@ -27,11 +19,11 @@ def r_bool():
 
 
 def r_byte():
-    return hex(r_int(0, 256))[2:]
+    return hex(r_int(0, 256))[2:].zfill(2)
 
 
 def r_color():
-    return r_byte() + r_byte() + r_byte() + r_byte()    # RGBA
+    return (r_byte() + r_byte() + r_byte() + "ff").upper()  # RGBA
 
 
 @dataclass
@@ -69,9 +61,9 @@ class PRIMARY_CROSSHAIR:
     outline_color: str = ""
     outline_opacity: float = 0.0
     outline_thickness: int = 0
-    cener_dot: bool = False
-    cener_dot_opacity: float = 0.0
-    cener_dot_thickness: int = 0
+    center_dot: bool = False
+    center_dot_opacity: float = 0.0
+    center_dot_thickness: int = 0
     override_firing_error: bool = False
     overide_all_primary: bool = False
 
@@ -82,21 +74,21 @@ class PRIMARY_CROSSHAIR:
         self.outline_color = r_color()
         self.outline_opacity = r_float(0.0, 1.0)
         self.outline_thickness = r_int(1, 6)
-        self.cener_dot = r_bool()
-        self.cener_dot_opacity = r_float(0.0, 1.0)
-        self.cener_dot_thickness = r_int(1, 6)
+        self.center_dot = r_bool()
+        self.center_dot_opacity = r_float(0.0, 1.0)
+        self.center_dot_thickness = r_int(1, 6)
         self.override_firing_error = r_bool()
         self.overide_all_primary = r_bool()
 
     def __str__(self):
         ret_str = ""
-        if not self.custom_color:
+        if not self.use_custom_color:
             ret_str += f"c;{random.randrange(8)};"
         else:
-            ret_str += f"c;8;u;{self.custom_color};"
+            ret_str += f"c;8;u;{self.custom_color};b;1;"
 
-        if self.use_custom_color:
-            ret_str += "b;1;"
+        # if self.use_custom_color:
+        #     ret_str += ""
 
         h = int(self.outlines)
         ret_str += f"h;{h};"
@@ -105,9 +97,9 @@ class PRIMARY_CROSSHAIR:
         o = self.outline_opacity
         ret_str += f"t;{t};o;{o};"
 
-        d = int(self.cener_dot)
-        z = self.cener_dot_thickness
-        a = self.cener_dot_opacity
+        d = int(self.center_dot)
+        z = self.center_dot_thickness
+        a = self.center_dot_opacity
         ret_str += f"d;{d};z;{z};a;{a};"
 
         m = int(self.override_firing_error)
@@ -132,7 +124,7 @@ class PRIMARY_INNER_LINES:
     firing_error_scale: float = 1.0
 
     def __post_init__(self):
-        self.show_lines = r_bool()
+        # self.show_lines = r_bool() # Always show inner lines
         self.opacity = r_float(0.0, 1.0)
         self.line_thickness = r_int(1, 10)
         self.line_offset = r_int(1, 20)
@@ -182,6 +174,7 @@ class PRIMARY_INNER_LINES:
 
 @dataclass
 class PRIMARY_OUTER_LINES(PRIMARY_INNER_LINES):
+    meta: int = 1
     ...
 
 
@@ -249,7 +242,7 @@ class GENERAL:
     other: GENERAL_OTHER
 
     def __str__(self):
-        return str(self.crosshair)+str(self.other)
+        return str(self.crosshair) + str(self.other)
 
 
 @dataclass
@@ -260,12 +253,11 @@ class PRIMARY:
 
     def __str__(self):
         ret_str = ""
-        if self.crosshair.overide_all_primary:
-            ret_str += "c;1;"
+        # if self.crosshair.overide_all_primary:
+        #     ret_str += "c;1;"
 
-        ret_str += "P;"
-        ret_str += str(self.crosshair) + \
-            str(self.inner_lines) + str(self.outer_lines)
+        # ret_str += "P;"
+        ret_str += str(self.crosshair) + str(self.inner_lines) + str(self.outer_lines)
         return ret_str
 
 
@@ -278,8 +270,7 @@ class AIMDOWNSIGHTS:
 
     def __str__(self):
         ret_str = "A;"
-        ret_str += str(self.crosshair) + \
-            str(self.inner_lines) + str(self.outer_lines)
+        ret_str += str(self.crosshair) + str(self.inner_lines) + str(self.outer_lines)
         return ret_str
 
 
@@ -295,16 +286,29 @@ class SNIPERSCOPE:
 
 def randomize():
     g = GENERAL(GENERAL_CROSSHAIR(), GENERAL_OTHER())
-    p = PRIMARY(PRIMARY_CROSSHAIR(), PRIMARY_INNER_LINES(),
-                PRIMARY_OUTER_LINES())
-    a = AIMDOWNSIGHTS(AIMDOWNSIGHTS_CROSSHAIR(),
-                      AIMDOWNSIGHTS_INNER_LINES(), AIMDOWNSIGHTS_OUTER_LINES())
+    p = PRIMARY(PRIMARY_CROSSHAIR(), PRIMARY_INNER_LINES(), PRIMARY_OUTER_LINES())
+    a = AIMDOWNSIGHTS(
+        AIMDOWNSIGHTS_CROSSHAIR(),
+        AIMDOWNSIGHTS_INNER_LINES(),
+        AIMDOWNSIGHTS_OUTER_LINES(),
+    )
     s = SNIPERSCOPE(SNIPERSCOPE_GENERAL())
 
     return "0;" + str(g) + str(p) + str(a) + str(s)[:-1]
 
 
-if __name__ == "__main__":
+if len(sys.argv) > 1:
+
+    def helper_randomize():
+        r = randomize()
+        pyperclip.copy(r)
+        keyboard.send("ctrl + v")
+        print(f"Hotkey: Generating new crosshair! <{r}>")
+
+    keyboard.register_hotkey("f12", helper_randomize)
+    input()
+
+else:
     while True:
         x = input(">>> ")
 
