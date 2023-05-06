@@ -200,14 +200,14 @@ class AIMDOWNSIGHTS_OUTER_LINES(PRIMARY_OUTER_LINES):
 
 @dataclass
 class SNIPERSCOPE_GENERAL:
-    display_center_dot: bool = False
+    display_center_dot: bool = True
     use_custom_center_dot_color: bool = False
     center_dot_color_custom: str = ""
     center_dot_thickness: int = 1
     center_dot_opacity: float = 0.75
 
     def __post_init__(self):
-        self.display_center_dot = r_bool()
+        # self.display_center_dot = r_bool()
         self.use_custom_center_dot_color = r_bool()
         self.center_dot_color_custom = r_color()
         self.center_dot_thickness = r_int(1, 6)
